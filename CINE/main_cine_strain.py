@@ -5,7 +5,34 @@ from nnunetv2.inference.predict_from_raw_data import nnUNetPredictor
 from strain import compute_strain_cine
 import glob
 from pathlib import Path
+from skimage import measure
 
+
+def remove_islands(mask):
+    """
+    Remove islands from prediction
+    
+    parameters:
+        mask (2D array): prediction mask
+    
+    returns:
+        clean_mask (2D array): mask without islands
+    """
+    # Find all chunks of pixels
+    labels = measure.label(mask, connectivity=2)
+    
+    # If there is only one chunk, no islands on original mask
+    if labels.max() == 0:
+        return mask
+    
+    # Find the largest chunk
+    largest_cc = np.argmax(np.bincount(labels.flat)[1:]) + 1
+    
+    # Remove all the other ones
+    clean_mask = (labels == largest_cc).astype(np.uint8)
+    
+    # Return cleaned mask
+    return clean_mask
 
 MODEL_LOC   = ''    # Location of the nnunet model
 OUTPUT_LOC  = ''    # Result location
@@ -55,6 +82,8 @@ for f in glob.glob(os.path.join(INPUT_LOC, '*')):
         # Remove cavity
         idx_lvc = pred == 2
         pred[idx_lvc] = 0
+
+        pred = remove_islands(pred)
         pred_array.append(pred)
 
     # Compute strain
