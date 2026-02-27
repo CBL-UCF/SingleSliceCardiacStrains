@@ -72,10 +72,16 @@ DENSE/
 │   └── transmural_wall_finder.py
 ├── data/      # Should be added in this style (multiple subjects as example )
 │   └── mat/
+│   │   ├── Vol_004/ ==> for example, if Vol_id=4 and slice_list=[5,6], it will look for:
+│   │   │        ├──  subject004_slice05.mat
+│   │   │        └──  subject004_slice06.mat
+│   │   ├── Vol_011/
+│   │   └── Vol_022/
+│   │
+│   └── nifti/  ########## OPTIONAL (area_mask_based=True) ########### (in case you want frame area to be computed from nifti masks directly) 
 │       ├── Vol_004/ ==> for example, if Vol_id=4 and slice_list=[5,6], it will look for:
-│               ├──  subject004_slice05.mat
-│               └──  subject004_slice06.mat
-│       ├── Vol_009/
+│       │        ├──  subject004_slice05.nii.gz    # Each nifti mask has to be saved as an ndarray of [width, height, frame] inside a nifti file
+│       │        └──  subject004_slice06.nii.gz
 │       ├── Vol_011/
 │       └── Vol_022/
 ├── results_pipeline/
