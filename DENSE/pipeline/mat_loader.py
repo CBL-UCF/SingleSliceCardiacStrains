@@ -4,6 +4,7 @@
 import os
 import numpy as np
 import scipy.io as sio
+import nibabel as nib
 
 def polygon_area(coords):
     """
@@ -21,7 +22,7 @@ def polygon_area(coords):
     return 0.5 * np.abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))
 
 
-def data_loader(Vol_id, slice_list, data_root="data/mat"):
+def data_loader(Vol_id, slice_list, area_mask_based=False, data_root="data/mat"):
     """
     This function loads displacement and coordinate data from .mat files for the specified volume and slices.
 
@@ -194,33 +195,52 @@ def data_loader(Vol_id, slice_list, data_root="data/mat"):
         lv_area_frames = [] # To store area per frame for this slice]
         min_lvc_area = float('inf')
         peak_systole_frame = 0
-        if 'ROIInfo' in mat:
-            try:
-                roi_info = mat['ROIInfo'][0, 0]
-                # Check for 'Contour' field which contains dynamic contours
-                if 'Contour' in roi_info.dtype.names:
-                    contours_cell = roi_info['Contour']
-                    
-                    if contours_cell.shape[0] == min_num_frames:
-                        for f in range(min_num_frames):
-                            epi_frame = contours_cell[f, 0]     # no shift needed here as it does not affect area calculation
-                            endo_frame = contours_cell[f, 1]    # no shift needed here as it does not affect area calculation   
 
-                            area_epi = polygon_area(epi_frame)
-                            area_endo = polygon_area(endo_frame)
+        #### Compute using the contours
+        if area_mask_based == False:
+            if 'ROIInfo' in mat:
+                try:
+                    roi_info = mat['ROIInfo'][0, 0]
+                    # Check for 'Contour' field which contains dynamic contours
+                    if 'Contour' in roi_info.dtype.names:
+                        contours_cell = roi_info['Contour']
+                        
+                        if contours_cell.shape[0] == min_num_frames:
+                            for f in range(min_num_frames):
+                                epi_frame = contours_cell[f, 0]     # no shift needed here as it does not affect area calculation
+                                endo_frame = contours_cell[f, 1]    # no shift needed here as it does not affect area calculation   
 
-                            # update peak systole frame
-                            if area_endo < min_lvc_area:
-                                peak_systole_frame = f
-                            #update minimum lvc area
-                            min_lvc_area = min(min_lvc_area, area_endo)
+                                area_epi = polygon_area(epi_frame)
+                                area_endo = polygon_area(endo_frame)
 
-                            lv_area_frames.append(area_epi - area_endo) # Myocardial Area = |Epi - Endo|
-                else:
-                    raise ValueError(f"ROIInfo.Contour field not found in slice {slice_name}.")
-            except Exception as e:
-                print(f"Warning: Error extracting  areas for slice {slice_name}: {e}")
-                
+                                # update peak systole frame
+                                if area_endo < min_lvc_area:
+                                    peak_systole_frame = f
+                                #update minimum lvc area
+                                min_lvc_area = min(min_lvc_area, area_endo)
+
+                                lv_area_frames.append(area_epi - area_endo) # Myocardial Area = |Epi - Endo|
+                    else:
+                        raise ValueError(f"ROIInfo.Contour field not found in slice {slice_name}.")
+                except Exception as e:
+                    print(f"Warning: Error extracting  areas for slice {slice_name}: {e}")
+        
+        else:           # When area_mask_based is True, we compute the areas based on the NIFTI mask 
+            nifti_mask_path = f'data/nifti/Vol_{Vol_id:03d}/subject{Vol_id:03d}_slice{slice_name:02d}.nii.gz'
+            nifti_mask_image = nib.load(nifti_mask_path)
+            nifti_mask_data = nifti_mask_image.get_fdata()
+            for frame in range(min_num_frames):
+                frame_data = nifti_mask_data[:, :, frame] 
+                lvc_area = np.sum(frame_data == 2)
+                lvm_area = np.sum(frame_data == 1)
+
+                if lvc_area < min_lvc_area:
+                    peak_systole_frame = frame
+                # update minimum lvc area
+                min_lvc_area = min(min_lvc_area, lvc_area)
+
+                lv_area_frames.append(lvm_area) # In this case, we only have the myocardial area (LVM) from the mask
+            
         # save lv areas for this slice
         lv_area_slices.append(lv_area_frames)
         slices_peak_systole.append(peak_systole_frame)
