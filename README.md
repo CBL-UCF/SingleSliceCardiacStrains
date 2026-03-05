@@ -2,10 +2,7 @@
 Computing cardiac strains from one slice CINE data and comparing it with strains computed from one- and two-slice DENSE data
 
 ## CINE model
-The cine model consists of two parts, the main pipeline and the nnU_net model. The main pipeline consists of two files main_cine_strain.py and strain.py.
-
-### cine_model_nnUnet.zip
-This file is the trained model used in this work. All folds, weights, and required files are include in this file.
+The cine model consists of two parts, the main pipeline and the nnU_net model. The main pipeline consists of two files main_cine_strain.py and strain.py. A demo of this model can be found on our [website](https://cecs.ucf.edu/CardiacKinematics).
 
 ### Strain.py
 This is the main function/pipeline for this work, it is responsible for taking all measurements and computing longitudinal (Ell), circumferential (Ecc), and radial strain. This file has only functions, therefore, no changes are required.
