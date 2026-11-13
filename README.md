@@ -1,5 +1,5 @@
 # SingleSliceCardiacStrains
-Computing cardiac strains from one slice CINE data and comparing it with strains computed from one- and two-slice DENSE data
+A tool to compute cardiac strains from one slice CINE data and comparing them with strains computed from one- and two-slice DENSE data
 
 ## CINE model
 The cine model consists of two parts, the main pipeline and the nnU_net model. The main pipeline consists of two files main_cine_strain.py and strain.py. A demo of this model can be found on our [website](https://cecs.ucf.edu/CardiacKinematics).
